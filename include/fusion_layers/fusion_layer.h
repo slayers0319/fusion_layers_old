@@ -6,10 +6,11 @@
 #include <costmap_2d/GenericPluginConfig.h>
 #include <dynamic_reconfigure/server.h>
 #include <mutex>
+#include <string>
 
 namespace fusion_layer_namespace
 {
-void split(char *src,const char *separator,char **dest,int *num);
+void split(char *src,const char *separator, std::vector<std::string> &dest);
 void dataSplit(const std_msgs::String::ConstPtr& msg);
 void thickened();
 void computeMapBounds();
@@ -28,14 +29,19 @@ double robot_px;
 double robot_py;
 double robot_pyaw;
 
-std::vector<PointDouble> related_points;
-std::vector<PointDouble> absolute_points;
+std::vector<PointDouble> related_points; //related points
+std::vector<PointDouble> absolute_points; //absolute points
+std::vector<std::string> split_result;
 
 std::mutex _data_mutex;
 
 //compute bounds
 double _min_x, _min_y, _max_x, _max_y; 
 double _costmap_resolution=0.05; 
+
+double pi = 3.14159265359;
+
+std::string CLEAR = "clear";
 
 class FusionLayer : public costmap_2d::Layer
 {

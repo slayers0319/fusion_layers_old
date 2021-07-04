@@ -7,6 +7,8 @@
 #include <fusion_layers/fusion_layer.h>
 #include <pluginlib/class_list_macros.h>
 
+#define DEBUG 1
+
 PLUGINLIB_EXPORT_CLASS(fusion_layer_namespace::FusionLayer, costmap_2d::Layer)
 
 using costmap_2d::LETHAL_OBSTACLE;
@@ -15,14 +17,16 @@ namespace fusion_layer_namespace{
 
 FusionLayer::FusionLayer() {}
 
-void split(char *src,const char *separator,char **dest,int *num) {
-  /*
+void split(char *src,const char *separator, std::vector<std::string> &dest) {
+/*
     src 源字串的首地址(buf的地址) 
     separator 指定的分割字元
     dest 接收子字串的陣列
-    num 分割後子字串的個數	*/
+*/
+#if DEBUG
+    ROS_INFO("split string");
+#endif
     char *pNext;
-    int count = 0;
     if (src == NULL || strlen(src) == 0){ //如果傳入的地址為空或長度為0，直接終止 c
         ROS_INFO("string==NULL");
         return;
@@ -33,58 +37,60 @@ void split(char *src,const char *separator,char **dest,int *num) {
     }
     pNext = (char *)strtok(src,separator); //必須使用(char *)進行強制型別轉換(雖然不寫有的編譯器中不會出現指標錯誤)
     while(pNext != NULL) {
-        *dest++ = pNext;
-        ++count;
+        dest.push_back(pNext);
         pNext = (char *)strtok(NULL,separator);  //必須使用(char *)進行強制型別轉換
     }  
-    //ROS_INFO("split string");
-    *num = count;
 } 
 
 void dataSplit(const std_msgs::String::ConstPtr& msg){ 
     std::lock_guard<std::mutex> l(_data_mutex);
+
+#if DEBUG
     ROS_INFO("callback start ------");
-    double pi = 3.14159265359;
-
     ROS_INFO("get msg %s", msg->data.c_str());
+#endif
 
+    //input string
     char *buf = const_cast<char*>(msg->data.c_str());
-    //用來接收返回資料的陣列。這裡的陣列元素只要設定的比分割後的子字串個數大就好了。
-    char *revbuf[300] = {0}; //存放分割後的子字串 
-    //分割後子字串的個數
-    int num = 0;
-    std::string clear = "clear";
+
+    //clear split_result
+    std::vector<std::string> ().swap(split_result);
+    
+    //there is not input
     if(msg->data.c_str()==NULL){
         ROS_INFO("msg==NULL");
         return;
-    }else if(msg->data.c_str()==clear){
-        //clear vector
+    }else if(msg->data.c_str()==CLEAR){
+        //clear point vector
         std::vector<PointDouble> ().swap(related_points);
         std::vector<PointDouble> ().swap(absolute_points);
-
-        ROS_INFO("clear");
+        ROS_INFO("clear fusion layers");
         return;
     }
-    //split data
-    split(buf,",",revbuf,&num); //呼叫函式進行分割 
-    ROS_INFO("num = %d", num);
 
-    if(num%3 && num){
+    //split data
+    split(buf,",",split_result);
+
+#if DEBUG
+    ROS_INFO("split_result.size() = %d", (int)split_result.size());
+#endif
+
+    if(split_result.size()%3 && !split_result.empty()){
         ROS_INFO("not a point");
         return;
     }else{
         //clear vector
         std::vector<PointDouble> ().swap(related_points);
         std::vector<PointDouble> ().swap(absolute_points);
-        //revbuf=["P1", "x1", "y1", "P2", "x2", "y2"]
-        for(int i = 1;i < num; i+=3) {
-            //lr_output_message("%s\n",revbuf[i]);
-            //int j=i/3, k=i%3;
-            
+
+        //split_result=["P1", "x1", "y1", "P2", "x2", "y2"]  data format
+        for(int i = 1;i < split_result.size(); i+=3) {
             PointDouble pt;
-            double sx = std::strtod(revbuf[i],NULL);
+
+            double sx = std::strtod(split_result[i].c_str(),NULL); //convert string to double
             pt.x= sx;
-            double sy = std::strtod(revbuf[i+1],NULL);
+
+            double sy = std::strtod(split_result[i+1].c_str(),NULL); //convert string to double
             pt.y= sy;
             related_points.push_back(pt);
         }
@@ -103,15 +109,23 @@ void dataSplit(const std_msgs::String::ConstPtr& msg){
         pt.y = robot_py + sin(theata+robot_pyaw)*r;
         absolute_points.push_back(pt);
     }
-    //ROS_INFO("absolute_points size =  %d",(int)absolute_points.size());
+
+#if DEBUG
+    ROS_INFO("before thickened absolute_points.size() =  %d", (int)absolute_points.size());
+#endif    
+
     if(absolute_points.size()==2){
         //加粗
         thickened();
     }
 
-    //ROS_INFO("absolute_points size =  %d",(int)absolute_points.size());
+#if DEBUG
+    ROS_INFO("before computeMapBounds absolute_points.size() =  %d", (int)absolute_points.size());
+#endif 
+
+    //reflesh map bounds
     computeMapBounds();
-    
+
 }
 
 void thickened(){
@@ -153,14 +167,17 @@ void computeMapBounds(){
 }
 
 void FusionLayer::onInitialize(){ 
+#if DEBUG
+    ROS_INFO("fusion_layers in DEBUG mode!!");
+#endif
+
     ros::NodeHandle ped_nh("fusion_data");
     pedestrian_sub_ = ped_nh.subscribe<std_msgs::String>("/chatter7" ,1000, dataSplit);
     ROS_INFO("fusion_data nodehandle");
     ros::NodeHandle nh("~/" + name_);
     current_ = true;
     dsrv_ = new dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>(nh);
-    dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>::CallbackType cb = boost::bind(
-        &FusionLayer::reconfigureCB, this, _1, _2);
+    dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>::CallbackType cb = boost::bind(&FusionLayer::reconfigureCB, this, _1, _2);
     dsrv_->setCallback(cb);
     costmap_2d::Costmap2D *costmap = layered_costmap_->getCostmap();
     _costmap_resolution = costmap->getResolution();
