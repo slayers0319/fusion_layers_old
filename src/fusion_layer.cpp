@@ -60,6 +60,11 @@ void dataSplit(const std_msgs::String::ConstPtr& msg){
     if(msg->data.c_str()==NULL){
         ROS_INFO("msg==NULL");
         return;
+    }else if(msg->data.c_str()==NONE){
+#if DEBUG
+    ROS_INFO("none");
+#endif
+        return;
     }else if(msg->data.c_str()==CLEAR){
         //clear point vector
         std::vector<PointDouble> ().swap(related_points);
