@@ -19,17 +19,30 @@ def talker():
         n=input()
         if n==-1:
             data.data = "clear"
-            pub.publish(data)
-            break
-        for i in range(n):
-            rate.sleep()
-            name = "obstacle"
-            data_x = random.uniform(0,0.5)
-            data_y = random.uniform(0.5,1.0)
-            
-            data.data = name+","+str(data_x)+","+str(data_y)+","+"obstacle"+","+str(random.uniform(-0.5,0.0))+","+str(random.uniform(0.5,1.0))
             rospy.loginfo(data)
             pub.publish(data)
+            break
+        elif n==-3:
+            data.data = "none"
+            rospy.loginfo(data)
+            pub.publish(data)
+        elif n==0:
+            data.data = "personR,-0.33,3.15,personR,1.13,2.97"
+            rospy.loginfo(data)
+            pub.publish(data)
+        elif n==-2:
+            data.data = "clear"
+            rospy.loginfo(data)
+            pub.publish(data)
+        else:
+            for i in range(n):
+                rate.sleep()
+                name = "obstacle"
+                data_x = random.uniform(0,0.5)
+                data_y = random.uniform(0.5,1.0)
+                data.data = name+","+str(data_x)+","+str(data_y)+","+"obstacle"+","+str(random.uniform(-0.5,0.0))+","+str(random.uniform(0.5,1.0))
+                rospy.loginfo(data)
+                pub.publish(data)
             
 
         rospy.loginfo("-------------")

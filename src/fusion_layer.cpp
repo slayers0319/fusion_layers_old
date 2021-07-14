@@ -7,7 +7,7 @@
 #include <fusion_layers/fusion_layer.h>
 #include <pluginlib/class_list_macros.h>
 
-#define DEBUG 1
+#define DEBUG 0
 
 PLUGINLIB_EXPORT_CLASS(fusion_layer_namespace::FusionLayer, costmap_2d::Layer)
 
@@ -39,7 +39,7 @@ void split(char *src,const char *separator, std::vector<std::string> &dest) {
     while(pNext != NULL) {
         dest.push_back(pNext);
         pNext = (char *)strtok(NULL,separator);  //必須使用(char *)進行強制型別轉換
-    }  
+    }
 } 
 
 void dataSplit(const std_msgs::String::ConstPtr& msg){ 
@@ -57,8 +57,10 @@ void dataSplit(const std_msgs::String::ConstPtr& msg){
     std::vector<std::string> ().swap(split_result);
     
     //there is not input
-    if(msg->data.c_str()==NULL){
+    if(buf==NULL || strlen(buf)==0 ){
+#if DEBUG
         ROS_INFO("msg==NULL");
+#endif
         return;
     }else if(msg->data.c_str()==NONE){
 #if DEBUG
@@ -80,8 +82,10 @@ void dataSplit(const std_msgs::String::ConstPtr& msg){
     ROS_INFO("split_result.size() = %d", (int)split_result.size());
 #endif
 
-    if(split_result.size()%3 && !split_result.empty()){
+    if(split_result.size()%3 || split_result.empty() || split_result.size()<=3){
+#if DEBUG
         ROS_INFO("not a point");
+#endif
         return;
     }else{
         //clear vector
@@ -89,9 +93,10 @@ void dataSplit(const std_msgs::String::ConstPtr& msg){
         std::vector<PointDouble> ().swap(absolute_points);
 
         //split_result=["P1", "x1", "y1", "P2", "x2", "y2"]  data format
+        ROS_INFO("(%s,%s) (%s,%s)",split_result[1].c_str(),split_result[2].c_str(),split_result[4].c_str(),split_result[5].c_str());
         for(int i = 1;i < split_result.size(); i+=3) {
             PointDouble pt;
-
+            
             double sx = std::strtod(split_result[i].c_str(),NULL); //convert string to double
             pt.x= sx;
 

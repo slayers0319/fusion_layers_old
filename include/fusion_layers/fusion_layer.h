@@ -8,9 +8,7 @@
 #include <mutex>
 #include <string>
 
-#define CLEAR "clear"
-#define NONE "none"
-#define pi 3.14159265359
+
 
 namespace fusion_layer_namespace
 {
@@ -43,9 +41,10 @@ std::mutex _data_mutex;
 double _min_x, _min_y, _max_x, _max_y; 
 double _costmap_resolution=0.05; 
 
-//double pi = 3.14159265359;
+double pi = 3.14159265359;
 
-//std::string CLEAR = "clear";
+std::string CLEAR = "clear";
+std::string NONE = "none";
 
 class FusionLayer : public costmap_2d::Layer
 {
