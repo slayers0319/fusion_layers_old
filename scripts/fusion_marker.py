@@ -30,7 +30,7 @@ class rviz_maker():
             marker_point.id = i*2
             marker_point.type = Marker.CYLINDER
             marker_point.action = Marker.ADD
-            marker_point.lifetime = rospy.Duration(5)
+            marker_point.lifetime = rospy.Duration(2)
             marker_point.scale.x = 0.2
             marker_point.scale.y = 0.2
             marker_point.scale.z = 0.2
@@ -54,7 +54,7 @@ class rviz_maker():
             marker_text.id = i*2+1
             marker_text.type=Marker.TEXT_VIEW_FACING
             marker_text.action=Marker.ADD
-            marker_text.lifetime = rospy.Duration(5)
+            marker_text.lifetime = rospy.Duration(2)
             marker_text.scale.z = font_size
             marker_text.color.a = 1.0
             if point[3]=='R':

@@ -20,7 +20,7 @@ local_costmap:
 #    - {name: costmap_prohibition_layer,    type: "costmap_prohibition_layer_namespace::CostmapProhibitionLayer"}
 
   inflation_layer: 
-    inflation_radius: 0
+    inflation_radius: 0.15
  
 
 
